@@ -20,10 +20,8 @@ export interface FacebookCurrentAccessTokenResponse {
 }
 
 export interface FacebookLoginPlugin {
-  initialize(options: Partial<FacebookConfiguration>): Promise<void>;
   login(options: { permissions: string[] }): Promise<FacebookLoginResponse>;
   logout(): Promise<void>;
-  reauthorize(): Promise<FacebookLoginResponse>;
   getCurrentAccessToken(): Promise<FacebookCurrentAccessTokenResponse>;
   getProfile<T extends object>(options: {
     fields: readonly string[];
@@ -49,12 +47,4 @@ export interface FacebookError {
 
 export interface FacebookGetProfileResponse {
   error: FacebookError | null;
-}
-
-export interface FacebookConfiguration {
-  appId: string;
-  autoLogAppEvents: boolean;
-  xfbml: boolean;
-  version: string;
-  locale:string;
 }

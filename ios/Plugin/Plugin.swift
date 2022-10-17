@@ -24,26 +24,26 @@ public class FacebookLogin: CAPPlugin {
         return dateFormatter.string(from: date)
     }
 
-    @objc func initialize(_ call: CAPPluginCall) {
-        call.resolve()
-    }
-
     @objc func login(_ call: CAPPluginCall) {
         guard let permissions = call.getArray("permissions", String.self) else {
             call.reject("Missing permissions argument")
             return
         }
 
+        let perm = permissions.map { Permission.custom($0) }
 
         DispatchQueue.main.async {
-            self.loginManager.logIn(permissions: permissions, from: self.bridge?.viewController) { result, error in
-                if let error = error {
+            self.loginManager.logIn(permissions: perm, viewController: self.bridge?.viewController) { loginResult in
+                switch loginResult {
+                case .failed(let error):
                     print(error)
                     call.reject("LoginManager.logIn failed")
-                } else if let result = result, result.isCancelled {
+
+                case .cancelled:
                     print("User cancelled login")
                     call.resolve()
-                } else {
+
+                case .success(let grantedPermissions, let declinedPermissions, let accessToken):
                     print("Logged in")
                     return self.getCurrentAccessToken(call)
                 }
@@ -55,23 +55,6 @@ public class FacebookLogin: CAPPlugin {
         loginManager.logOut()
 
         call.resolve()
-    }
-
-    @objc func reauthorize(_ call: CAPPluginCall) {
-        DispatchQueue.main.async {
-            if let token = AccessToken.current, !token.isDataAccessExpired {
-                return self.getCurrentAccessToken(call)
-            } else {
-                self.loginManager.reauthorizeDataAccess(from: (self.bridge?.viewController)!) { (loginResult, error) in
-                    if (loginResult?.token) != nil {
-                        return self.getCurrentAccessToken(call)
-                    } else {
-                        print(error!)
-                        call.reject("LoginManager.reauthorize failed")
-                    }
-                }
-            }
-        }
     }
 
     private func accessTokenToJson(_ accessToken: AccessToken) -> [String: Any?] {
